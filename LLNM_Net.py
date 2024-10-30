@@ -37,19 +37,8 @@ def load_weights(model, weight_path):
 
     model_weights.update(load_weights)
     model.load_state_dict(model_weights)
-    print("Loading IRENE...")
+    print("Loading LLNM-Net...")
     return model
-
-def computeAUROC (dataGT, dataPRED, classCount=8):
-    outAUROC = []
-        
-    datanpGT = dataGT.cpu().numpy()
-    datanpPRED = dataPRED.cpu().numpy()
-        
-    for i in range(classCount):
-        outAUROC.append(roc_auc_score(datanpGT[:, i], datanpPRED[:, i]))
-            
-    return outAUROC
 
 class Data(Dataset):
     def __init__(self, set_type, img_dir, transform=None, target_transform=None):
@@ -58,7 +47,6 @@ class Data(Dataset):
         self.mm_data = pickle.load(f)
         f.close()
         self.idx_list = list(self.mm_data.keys())  
-        # self.idx_list = list(self.mm_data.keys())
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
@@ -84,9 +72,7 @@ class Data(Dataset):
         input_ids = self.tokenizer.encode(str_rr, add_special_tokens=True, return_tensors='pt')
         outputs = self.bert_model(input_ids)
         last_hidden_state = outputs.last_hidden_state
-        # print(last_hidden_state.shape)
 
-        # 填充
         padding_length = tk_lim - last_hidden_state.shape[1]
         if padding_length>0:
             padding_token = self.tokenizer.pad_token_id
@@ -99,18 +85,18 @@ class Data(Dataset):
 
         rr = torch.tensor(rr_vector, dtype=torch.float32)                   # the report feature
         demo = torch.from_numpy(np.array(self.mm_data[k]['bics'])).float()  # the demographics information (age and sex)
-        img_fea = torch.from_numpy(self.mm_data[k]['bts']).float()              # the image feature, such as shape and echo
+        img_fea = torch.from_numpy(self.mm_data[k]['bts']).float()          # the image feature, such as shape and echo
         return img, label, rr, demo, img_fea
 
 def train(args, model_para_path=None):
     torch.manual_seed(0)
     num_classes = args.CLS
-    config = CONFIGS["IRENE"]
-    irene = IRENE(config, 224, zero_head=True, num_classes=num_classes)
+    config = CONFIGS["LLNM_Net"]
+    llnm_net = LLNM_Net(config, 224, zero_head=True, num_classes=num_classes)
     if model_para_path:
-        irene = load_weights(irene, model_para_path)
-    for param in irene.parameters():
-        param.requires_grad = True  # 设置参数的requires_grad为True
+        llnm_net = load_weights(llnm_net, model_para_path)
+    for param in llnm_net.parameters():
+        param.requires_grad = True                                          # set requires_grad to True
     img_dir = args.DATA_DIR
 
     data_transforms = {
@@ -125,10 +111,10 @@ def train(args, model_para_path=None):
 
     trainloader = DataLoader(train_data, batch_size=args.BSZ, shuffle=False, num_workers=0, pin_memory=True)
 
-    optimizer_irene = torch.optim.AdamW(irene.parameters(), lr=3e-5, weight_decay=0.01)
-    irene, optimizer_irene = amp.initialize(irene.cuda(), optimizer_irene, opt_level="O1")
+    optimizer_llnm_net = torch.optim.AdamW(llnm_net.parameters(), lr=3e-5, weight_decay=0.01)
+    llnm_net, optimizer_llnm_net = amp.initialize(llnm_net.cuda(), optimizer_llnm_net, opt_level="O1")
 
-    irene = torch.nn.DataParallel(irene)
+    llnm_net = torch.nn.DataParallel(llnm_net)
 
     #----- Train ------
     print('--------Start training-------')
@@ -137,7 +123,7 @@ def train(args, model_para_path=None):
     loss_fct = BCEWithLogitsLoss()
     loss_list, auc_list = [], []
 
-    irene.train()
+    llnm_net.train()
     for epoch in range(num_epochs):
         outGT = torch.FloatTensor().cuda(non_blocking=True)
         outPRED = torch.FloatTensor().cuda(non_blocking=True)
@@ -153,10 +139,10 @@ def train(args, model_para_path=None):
             imgs = imgs.cuda(non_blocking=True)
             labels = labels.cuda(non_blocking=True)
 
-            optimizer_irene.zero_grad()  
+            optimizer_llnm_net.zero_grad()  
 
             with torch.set_grad_enabled(True):
-                outputs = irene(imgs, rr, img_fea, sex, age) # logits, attn_weights, torch.mean(x, dim=1)
+                outputs = llnm_net(imgs, rr, img_fea, sex, age)         # logits, attn_weights, torch.mean(x, dim=1)
                 preds = outputs[0]
                 probs = torch.sigmoid(preds)
 
@@ -166,7 +152,7 @@ def train(args, model_para_path=None):
 
                 loss = loss_fct(preds.view(-1, num_classes), target_one_hot)
                 loss.backward()  # loss
-                optimizer_irene.step()
+                optimizer_llnm_net.step()
 
             running_loss += loss.item() * len(target)
 
@@ -186,7 +172,7 @@ def train(args, model_para_path=None):
         if loss.item()<loss_min:
             loss_min = loss.item()
             model_para_path = 'model_epoch'+str(epoch)+'_bs'+str(args.BSZ)+'_loss'+str(round(loss_min, 3))+'_auc'+str(round(auc, 3))+'.pth'
-            torch.save(irene.state_dict(), model_para_path)
+            torch.save(llnm_net.state_dict(), model_para_path)
 
         loss_list.append(running_loss)
         auc_list.append(epoch)
@@ -219,9 +205,9 @@ def train(args, model_para_path=None):
 def test(args, model_para_path):
     torch.manual_seed(0)
     num_classes = args.CLS
-    config = CONFIGS["IRENE"]
-    model = IRENE(config, 224, zero_head=True, num_classes=num_classes)
-    irene = load_weights(model, model_para_path)
+    config = CONFIGS["LLNM_Net"]
+    model = LLNM_Net(config, 224, zero_head=True, num_classes=num_classes)
+    llnm_net = load_weights(model, model_para_path)
     img_dir = args.DATA_DIR
 
     data_transforms = {
@@ -236,14 +222,14 @@ def test(args, model_para_path):
 
     testloader = DataLoader(test_data, batch_size=args.BSZ, shuffle=False, num_workers=0, pin_memory=True)
 
-    optimizer_irene = torch.optim.AdamW(irene.parameters(), lr=3e-5, weight_decay=0.01)
-    irene, optimizer_irene = amp.initialize(irene.cuda(), optimizer_irene, opt_level="O1")
+    optimizer_llnm_net = torch.optim.AdamW(llnm_net.parameters(), lr=3e-5, weight_decay=0.01)
+    llnm_net, optimizer_llnm_net = amp.initialize(llnm_net.cuda(), optimizer_llnm_net, opt_level="O1")
 
-    irene = torch.nn.DataParallel(irene)
+    llnm_net = torch.nn.DataParallel(llnm_net)
 
     #----- Test ------
     print('--------Start testing-------')
-    irene.eval()
+    llnm_net.eval()
     with torch.no_grad():
         outGT = torch.FloatTensor().cuda(non_blocking=True)
         outPRED = torch.FloatTensor().cuda(non_blocking=True)
@@ -257,7 +243,7 @@ def test(args, model_para_path):
             age = demo[:, :, 0].view(-1, 1, 1).cuda(non_blocking=True).float()
             imgs = imgs.cuda(non_blocking=True)
             labels = labels.cuda(non_blocking=True)
-            preds = irene(imgs, rr, img_fea, sex, age)[0]
+            preds = llnm_net(imgs, rr, img_fea, sex, age)[0]
             probs = torch.sigmoid(preds)
 
             outGT = torch.cat((outGT, labels), 0)
