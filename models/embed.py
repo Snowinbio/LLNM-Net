@@ -1,4 +1,3 @@
-# coding=utf-8
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -44,7 +43,7 @@ class Embeddings(nn.Module):
         self.patch_embeddings = Conv2d(in_channels=in_channels,
                                        out_channels=config.hidden_size,
                                        kernel_size=patch_size,
-                                       stride=patch_size)
+                                       stride=patch_size)                       # image datatype, if use multi images, we can set multi images to a 224*224
         self.rr_embeddings = Linear(768, config.hidden_size)  
         self.img_fea_embeddings = Linear(1, config.hidden_size)  
         self.sex_embeddings = Linear(1, config.hidden_size)  
@@ -70,7 +69,7 @@ class Embeddings(nn.Module):
 
         if self.hybrid:
             x = self.hybrid_model(x)
-        x = self.patch_embeddings(x) # 16*16 --> CNN --> 1*1   # chang the size for image input
+        x = self.patch_embeddings(x)                                            # Set 16*16 --> 1*1 with CNN
         rr = self.rr_embeddings(rr)
         img_fea = self.img_fea_embeddings(img_fea)
         sex = self.sex_embeddings(sex)
@@ -92,6 +91,3 @@ class Embeddings(nn.Module):
         sex_embeddings = self.dropout_sex(sex_embeddings)
         age_embeddings = self.dropout_age(age_embeddings)
         return embeddings, rr_embeddings, img_fea_embeddings, sex_embeddings, age_embeddings
-
-
-
