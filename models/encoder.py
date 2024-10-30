@@ -38,14 +38,14 @@ class Encoder(nn.Module):
     def forward(self, hidden_states, text=None):
         attn_weights = []
         
-        for (i, layer_block) in enumerate(self.layer):
+        for (i, layer_block) in enumerate(self.layer):     
             if i == 4:
                 hidden_states = torch.cat((hidden_states, text), 1)  
                 hidden_states, weights = layer_block(hidden_states)
             elif i < 4:
-                hidden_states, text, weights = layer_block(hidden_states, text)
+                hidden_states, text, weights = layer_block(hidden_states, text)       # This layyer for fusion block
             else:
-                hidden_states, weights = layer_block(hidden_states)
+                hidden_states, weights = layer_block(hidden_states)                   # This layyer for self-attention block
 
             if self.vis:
                 attn_weights.append(weights)
