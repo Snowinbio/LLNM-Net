@@ -21,6 +21,9 @@ import pdb
 
 logger = logging.getLogger(__name__)
 
+# rr: radiology report
+# img_fea: shape, echo
+
 def np2th(weights, conv=False):
     """Possibly convert HWIO to OIHW."""
     if conv:
@@ -41,7 +44,7 @@ class Transformer(nn.Module):
 
 
 class LLNM_Net(nn.Module):
-    def __init__(self, config, img_size=224, num_classes=2, zero_head=False, vis=False):
+    def __init__(self, config, img_size=224, num_classes=2, zero_head=False, vis=False):  # 2 class for LLNM predict. If predict the risk, set class=3
         super(LLNM_Net, self).__init__()
         self.num_classes = num_classes
         self.zero_head = zero_head
@@ -55,7 +58,7 @@ class LLNM_Net(nn.Module):
         logits = self.head(torch.mean(x, dim=1))
 
         if labels is not None:
-            loss_fct = BCEWithLogitsLoss()
+            loss_fct = BCEWithLogitsLoss()                                               # Use the BCE
             loss = loss_fct(logits.view(-1, self.num_classes), labels.float())
             return loss
         else:
@@ -78,11 +81,10 @@ class LLNM_Net(nn.Module):
 
             posemb = np2th(weights["Transformer/posembed_input/pos_embedding"])
             posemb_new = self.transformer.embeddings.position_embeddings
-            # print(posemb.size(), posemb_new.size())
             if posemb.size() == posemb_new.size():
                 self.transformer.embeddings.position_embeddings.copy_(posemb)
             else:
-                logger.info("load_pretrained: resized variant: %s to %s" % (posemb.size(), posemb_new.size()))
+                logger.info("Load the pretrained: resized variant: %s to %s" % (posemb.size(), posemb_new.size()))
                 ntok_new = posemb_new.size(1)
 
                 if self.classifier == "token":
@@ -93,7 +95,7 @@ class LLNM_Net(nn.Module):
 
                 gs_old = int(np.sqrt(len(posemb_grid)))
                 gs_new = int(np.sqrt(ntok_new))
-                print('load the pretrained: size from %s to %s' % (gs_old, gs_new))
+                print('Load the pretrained: size from %s to %s' % (gs_old, gs_new))
                 posemb_grid = posemb_grid.reshape(gs_old, gs_old, -1)
 
                 zoom = (gs_new / gs_old, gs_new / gs_old, 1)
