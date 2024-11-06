@@ -10,4 +10,4 @@ The data utilized in this study are subject to privacy restrictions. However, up
 ## Result
 We have provided a thyroid LLNM (lateral lymph node metastasis) prediction 3d model based on locational information. Please see the webpage: index.html.
 
-We visualized the focus points of LLNM-Net on the basis of Saliency for location information, registered a large amount of data, and statistically analyzed the model prediction heatmaps based on location information. We then established a model of metastasis probability distribution in three-dimensional space.
+We visualized the focus points of LLNM-Net on the basis of GradCAM++ for location information, registered a large amount of data, and statistically analyzed the model prediction heatmaps based on location information. We then established a model of metastasis probability distribution in three-dimensional space.
