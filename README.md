@@ -2,7 +2,7 @@
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 ## Explainable Multimodal Deep Learning for Predicting Thyroid Cancer Lateral Lymph Node Metastasis Using Ultrasound Imaging
 
-## Code
+## Train & Test
 LLNM_Net.py contains the main code for training and testing the model. The models folder includes the components of the model and the code for model construction, with modeling_LLNM_Net.py being the model architecture, and config recording some model parameters. The detailed code that follows will be gradually open-sourced.
 
 ## Install
