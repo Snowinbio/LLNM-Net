@@ -32,7 +32,7 @@ The primary code for the project is accessible at: https://github.com/Snowinbio/
 All references are listed in the article.
 
 ## Citation
-If you use this code in your research, please cite the following references: "Shen, P., Yang, Z., Sun, J. et al. Explainable multimodal deep learning for predicting thyroid cancer lateral lymph node metastasis using ultrasound imaging. Nat Commun 16, 7052 (2025). https://doi.org/10.1038/s41467-025-62042-z"
+If you use this code in your research, please cite the following references: "Shen, P., Yang, Z., Sun, J. et al. Explainable multimodal deep learning for predicting thyroid cancer lateral lymph node metastasis using ultrasound imaging. Nat Commun 16, 7052 (2025). https://doi.org/10.1038/s41467-025-62042-z".
 
 ## Licence
 The code is distributed under the Apache License 2.0. It can be used for non-commercial purposes only after the publication of the article. For any commercial use, please contact the author for permission.
