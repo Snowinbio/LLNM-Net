@@ -4,7 +4,7 @@
 
 ## Feature extraction
 ### Morphology
-We have updated and expanded our previous work - TiNet (https://github.com/Snowinbio/TiNet-iScience2023) to extract features of thyroid images including Internal morphology (Texture), Edge margin (Edge), Echogenicity, and Shape. We have provided 5 images each of benign and malignant nodules along with their segmentation labels. If you need to train your own model parameters, you need to supplement your own data in the train and val folders. At the same time, please note the following points: 1. Thyroid images are divided into transverse and longitudinal sections, and it is recommended to train a separate set of model parameters for each type of image. 2. Data should be placed in a dataset on a per-person basis, and there should be no case where data from one patient appears in both the training set and the validation set.
+In Train_nodule.py, We have updated and expanded our previous work - TiNet (https://github.com/Snowinbio/TiNet-iScience2023) to extract features of thyroid images including Internal morphology (Texture), Edge margin (Edge), Echogenicity, and Shape. We have provided 5 images each of benign and malignant nodules along with their segmentation labels. If you need to train your own model parameters, you need to supplement your own data in the train and val folders. At the same time, please note the following points: 1. Thyroid images are divided into transverse and longitudinal sections, and it is recommended to train a separate set of model parameters for each type of image. 2. Data should be placed in a dataset on a per-person basis, and there should be no case where data from one patient appears in both the training set and the validation set.
 
 ## Transformer module
 ### Train & Test 
