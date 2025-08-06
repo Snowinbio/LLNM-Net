@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader
 from model.Texture import TextureImageDataset, get_texture_transform
 from model.Edge import EdgeImageDataset, get_edge_transform
 from model.ResNet import get_resnet_model, train_model, evaluate_model, load_model
-# from model.Location import LocationFeatureExtractor
 from model.Echogenicity import Echogenicity
 from model.EdgeDetection import Detection, EdgeFeatureExtractor
 from model.Shape import ShapeFeatureExtractor
@@ -90,7 +89,6 @@ def process_pic(jpg_dir_path, nodule_dir_path, process_dir_path):
         jpg_img = transform.resize(image=jpg_img, output_shape=(out_size,out_size)) * 255
         jpg_img = np.where(nodule_label>0, jpg_img,0)
         
-        
         jpg_h_length = max_h_list-min_h_list
         jpg_v_length = max_v_list-min_v_list
         if jpg_h_length > jpg_v_length:
@@ -119,8 +117,6 @@ def process_pic(jpg_dir_path, nodule_dir_path, process_dir_path):
     
         print("Finish {:4f}% tasks.".format(jpg_num/jpgs_num*100),end='\r')
         
-
-
 def tinet_main(edge_train_bool = False, edge_cut_bool = False, texture_train_bool = False, texture_cut_bool = False,
                echo_train_bool = False, logistic_train_bool = False, test_set = "test"):
     
