@@ -124,13 +124,14 @@ def evaluate_model(model, dataloader):
         for inputs, labels, paths in dataloader['test']:
             sorted_indices = sorted(range(len(paths)), key=lambda x: (
                 0 if 'benign' in paths[x] else 1,
-                int(os.path.basename(paths[x]).split('.')[0])
+                int(os.path.basename(paths[x]).split('.')[0].split('_')[0])
             ))
             sorted_paths = [paths[i] for i in sorted_indices]
             sorted_inputs = inputs[sorted_indices].to(device)
             sorted_labels = labels[sorted_indices].to(device)
             for path in sorted_paths:
                 # print(path)
+                path = path.split("\\")[-1]
                 running_paths.append(path)
 
             outputs = model(sorted_inputs)
@@ -145,7 +146,7 @@ def evaluate_model(model, dataloader):
     print(f'Test Accuracy: {accuracy:.4f}')
     print(f'Test AUC: {auc:.4f}')
 
-    return running_prob, running_label
+    return running_prob, running_label, running_paths
 
 
 def visualize_results(train_acc, val_acc, test_acc, train_auc, val_auc, test_auc, num_epochs):
