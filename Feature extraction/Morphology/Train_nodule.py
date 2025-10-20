@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from model.Texture import TextureImageDataset, get_texture_transform
 from model.Edge import EdgeImageDataset, get_edge_transform
 from model.ResNet import get_resnet_model, train_model, evaluate_model, load_model
+# from model.Location import LocationFeatureExtractor
 from model.Echogenicity import Echogenicity
 from model.EdgeDetection import Detection, EdgeFeatureExtractor
 from model.Shape import ShapeFeatureExtractor
@@ -89,6 +90,7 @@ def process_pic(jpg_dir_path, nodule_dir_path, process_dir_path):
         jpg_img = transform.resize(image=jpg_img, output_shape=(out_size,out_size)) * 255
         jpg_img = np.where(nodule_label>0, jpg_img,0)
         
+        
         jpg_h_length = max_h_list-min_h_list
         jpg_v_length = max_v_list-min_v_list
         if jpg_h_length > jpg_v_length:
@@ -97,6 +99,8 @@ def process_pic(jpg_dir_path, nodule_dir_path, process_dir_path):
             for i in range(int(min_h_list*r), int(max_h_list*r)):
                 for j in range(int(min_v_list*r), int(max_v_list*r)):
                     correct_length = int((out_size-jpg_v_length*r)/2)-1
+                    if j-int(min_v_list*r)+correct_length >= out_size:
+                        print(j-int(min_v_list*r)+correct_length)
                     jpg_frame_img[i-int(min_h_list*r)][j-int(min_v_list*r)+correct_length] = jpg_img[i][j]
         else:
             r = out_size/jpg_v_length
@@ -117,6 +121,8 @@ def process_pic(jpg_dir_path, nodule_dir_path, process_dir_path):
     
         print("Finish {:4f}% tasks.".format(jpg_num/jpgs_num*100),end='\r')
         
+
+
 def tinet_main(edge_train_bool = False, edge_cut_bool = False, texture_train_bool = False, texture_cut_bool = False,
                echo_train_bool = False, logistic_train_bool = False, test_set = "test"):
     
@@ -126,7 +132,7 @@ def tinet_main(edge_train_bool = False, edge_cut_bool = False, texture_train_boo
     malignant_dir = r".\\data\\label\\"+test_set+"\\malignant"
     extractor = ShapeFeatureExtractor(dilation_value=3)
     all_ratios, num_benign, num_malignant = extractor.process_benign_and_malignant(benign_dir, malignant_dir)
-    ratio = extractor.print_ratios(all_ratios, num_benign, num_malignant)
+    ratio_dict = extractor.print_ratios(all_ratios, num_benign, num_malignant)
 
     ################### Texture Process #####################
     if texture_cut_bool:
@@ -193,11 +199,11 @@ def tinet_main(edge_train_bool = False, edge_cut_bool = False, texture_train_boo
     if test_set == 'train':
         edge_train_dataset = EdgeImageDataset(os.path.join(edge_data_dir, 'train'), transform=get_edge_transform())
         test_dataloader = {'test': DataLoader(edge_train_dataset, batch_size=1, shuffle=True, num_workers=0)}
-        edge, label = evaluate_model(loaded_model, test_dataloader)
+        edge, label, names = evaluate_model(loaded_model, test_dataloader)
     elif test_set == 'test':
         edge_test_dataset = EdgeImageDataset(os.path.join(edge_data_dir, 'test'), transform=get_edge_transform())
         test_dataloader = {'test': DataLoader(edge_test_dataset, batch_size=1, shuffle=True, num_workers=0)}
-        edge, label = evaluate_model(loaded_model, test_dataloader)
+        edge, label, names = evaluate_model(loaded_model, test_dataloader)
 
     ####### Echo feature
     benign_img_dir = r".\\data\\image\\"+test_set+"\\benign"
@@ -205,7 +211,7 @@ def tinet_main(edge_train_bool = False, edge_cut_bool = False, texture_train_boo
     malignant_img_dir = r".\\data\\image\\"+test_set+"\\malignant"
     malignant_edge_dir = r".\\data\\edge_images\\"+test_set+"\\malignant"
     extractor = Echogenicity(benign_img_dir, benign_edge_dir, malignant_img_dir, malignant_edge_dir, echo_train_bool)
-    p_norm_echo = extractor.calculate_p_norm()
+    p_norm_echo_dict = extractor.calculate_p_norm()
 
     ####### Texture feature
     texture_data_dir = os.path.join('.\\data', 'nodule')
@@ -232,16 +238,21 @@ def tinet_main(edge_train_bool = False, edge_cut_bool = False, texture_train_boo
     if test_set == 'train':
         texture_train_dataset = TextureImageDataset(os.path.join(texture_data_dir, 'train'), transform=get_texture_transform()['train'])
         test_dataloader = {'test': DataLoader(texture_train_dataset, batch_size=1, shuffle=True, num_workers=0)}
-        texture, label = evaluate_model(loaded_model, test_dataloader)
+        texture, label, names = evaluate_model(loaded_model, test_dataloader)
     elif test_set == 'test':
         texture_test_dataset = TextureImageDataset(os.path.join(texture_data_dir, 'test'), transform=get_texture_transform()['test'])
         test_dataloader = {'test': DataLoader(texture_test_dataset, batch_size=1, shuffle=True, num_workers=0)}
-        texture, label = evaluate_model(loaded_model, test_dataloader)
+        texture, label, names = evaluate_model(loaded_model, test_dataloader)
 
+    ratio = []
+    p_norm_echo = []
+    for name in names:
+        ratio.append(ratio_dict[name])
+        p_norm_echo.append(p_norm_echo_dict[name])
     # Save the feature result
     result_file = '.\\data\\data.csv'
-    print()
     result_df = pd.DataFrame({
+        'names': names,
         'ratio': ratio,
         'p_norm_echo': p_norm_echo,
         'edge': edge,
@@ -268,4 +279,6 @@ if __name__ == "__main__":
     # tinet_main(edge_train_bool = True, edge_cut_bool = True, texture_train_bool = True, texture_cut_bool = True,
     #            echo_train_bool = True, logistic_train_bool = True, test_set = "train")
     # For second-time use, no need to set parameters.
-    tinet_main()
+    tinet_main(edge_train_bool = False, edge_cut_bool = False, texture_train_bool = False, texture_cut_bool = False,
+               echo_train_bool = False, logistic_train_bool = False, test_set = "test")
+    # tinet_main()
