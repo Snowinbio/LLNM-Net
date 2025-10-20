@@ -7,6 +7,8 @@ import numpy as np
 class ShapeFeatureExtractor:
     def __init__(self, dilation_value=3):
         self.dilation_value = dilation_value
+        self.image_name = []
+        self.ratios_num = []
 
     def get_nodule_ratio(self, img):
         img_gray = np.array(img, copy=False)
@@ -37,6 +39,8 @@ class ShapeFeatureExtractor:
                 ratio = self.get_nodule_ratio(img)
                 if ratio is not None:
                     ratios.append((filename, ratio))
+                    self.ratios_num.append(ratio)
+                    self.image_name.append(filename)
                 else:
                     print(f"No tumor detected in image: {filename}")
         return ratios
@@ -58,13 +62,17 @@ class ShapeFeatureExtractor:
         return normalized_ratios
 
     def print_ratios(self, all_ratios, num_benign, num_malignant):
-        normalized_ratios = self.normalize_ratios(all_ratios)
-        normalized_benign_ratios = normalized_ratios[:num_benign]
-        normalized_malignant_ratios = normalized_ratios[num_benign:num_benign + num_malignant]
+        # normalized_ratios = self.normalize_ratios(all_ratios)
+        # normalized_benign_ratios = normalized_ratios[:num_benign]
+        # normalized_malignant_ratios = normalized_ratios[num_benign:num_benign + num_malignant]
+        # aspect_ratios = [round(ratio, 4) for _, ratio in normalized_benign_ratios + normalized_malignant_ratios]
 
-        aspect_ratios = [round(ratio, 2) for _, ratio in normalized_benign_ratios + normalized_malignant_ratios]
+        aspect_ratios = self.ratios_num
+        aspect_ratios_dict = {}
+        for i in range(len(self.image_name)):
+            aspect_ratios_dict[self.image_name[i]] = aspect_ratios[i]
 
-        return aspect_ratios
+        return aspect_ratios_dict
 
 
 
